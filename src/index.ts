@@ -1,8 +1,8 @@
 import util from 'node:util';
 import {
   BLOCKS,
-  Document,
   INLINES,
+  Document,
   Node,
   TopLevelBlock,
   Hyperlink,
@@ -21,8 +21,28 @@ interface HtmlLinkNode extends HtmlNode {
   };
 }
 
+const nodeMapping = new Map<string, string>([
+  ['p', BLOCKS.PARAGRAPH],
+  ['h1', BLOCKS.HEADING_1],
+  ['h2', BLOCKS.HEADING_2],
+  ['h3', BLOCKS.HEADING_3],
+  ['h4', BLOCKS.HEADING_4],
+  ['h5', BLOCKS.HEADING_5],
+  ['h6', BLOCKS.HEADING_6],
+  ['ol', BLOCKS.OL_LIST],
+  ['ul', BLOCKS.UL_LIST],
+  ['li', BLOCKS.LIST_ITEM],
+  ['hr', BLOCKS.HR],
+  ['blockquote', BLOCKS.QUOTE],
+  ['table', BLOCKS.TABLE],
+  ['tr', BLOCKS.TABLE_ROW],
+  ['td', BLOCKS.TABLE_CELL],
+  ['th', BLOCKS.TABLE_HEADER_CELL],
+  ['a', INLINES.HYPERLINK],
+]);
+
 type Config = {
-  customTransform?: (node: HtmlNode) => Node | null;
+  buildCustomNode?: (node: HtmlNode) => Node | null;
   preFilter?: (node: HtmlNode) => HtmlNode | boolean;
 };
 
@@ -33,7 +53,7 @@ function isLink(node: HtmlNode): node is HtmlLinkNode {
 /**
  * Convert HTML into Contentful rich text nodes
  * @param html - HTML to convert to Contentful Rich Text document format
- * @param config.customTransform - Callback to handle any HTML elements that you'd like to custom transform, or as a fallback for elements that don't have a corresponding Contentful rich text node. Return `null` for elements that you want pass through to the default transformer
+ * @param config.buildCustomNode - Callback to handle any HTML elements that you'd like to custom transform, or as a fallback for elements that don't have a corresponding Contentful rich text node. Return `null` for elements that you want to pass through to the default transformer
  * @param config.preFilter - Callback to modify the HTML AST prior to it being transformed to Contentful rich text nodes. This is useful for stripping out or modifying HTML elements, attributes, or text that you don't want to be transformed
  */
 function richTextFromHtml(html: string, config: Config): Document {
@@ -83,20 +103,17 @@ function buildHyperlink(node: HtmlLinkNode): Hyperlink {
 
 function htmlToRichTextNode(
   node: HtmlNode,
-  customTransform?: Config['customTransform'],
+  buildCustomNode?: Config['buildCustomNode'],
 ): Node {
-  let maybeCustomTransformedNode: Node | null | undefined;
-  if (customTransform) {
-    maybeCustomTransformedNode = customTransform(node);
+  let maybeCustomNode: Node | null | undefined;
+  if (buildCustomNode) {
+    maybeCustomNode = buildCustomNode(node);
   }
 
   // If maybeCustomTransformedNode is an object, user has returned
   // a custom transformed node that we'll use instead
-  if (
-    typeof maybeCustomTransformedNode === 'object' &&
-    maybeCustomTransformedNode !== null
-  )
-    return maybeCustomTransformedNode;
+  if (typeof maybeCustomNode === 'object' && maybeCustomNode !== null)
+    return maybeCustomNode;
 
   if (isLink(node)) {
     return buildHyperlink(node);
@@ -107,14 +124,14 @@ function htmlToRichTextNode(
 
 function htmlToRichTextNodes(
   nodes: HtmlNodes,
-  customTransform?: Config['customTransform'],
+  buildCustomNode?: Config['buildCustomNode'],
 ): Node[] {
   if (!nodes) {
     return [];
   }
 
   const rtNodes = nodes.map((node) => {
-    htmlToRichTextNode(node, customTransform);
+    htmlToRichTextNode(node, buildCustomNode);
   });
 
   return rtNodes;
@@ -122,9 +139,9 @@ function htmlToRichTextNodes(
 
 function astToRichTextDocument(
   ast: HtmlNodes,
-  customTransform?: Config['customTransform'],
+  buildCustomNode?: Config['buildCustomNode'],
 ): Document {
-  const content = htmlToRichTextNodes(ast, customTransform);
+  const content = htmlToRichTextNodes(ast, buildCustomNode);
 
   return {
     nodeType: BLOCKS.DOCUMENT,
