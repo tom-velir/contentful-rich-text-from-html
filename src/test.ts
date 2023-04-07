@@ -1,7 +1,7 @@
 import richTextFromHtml from './index.js';
 import examples from './examples.js';
 
-richTextFromHtml(examples[2], (node) => {
+richTextFromHtml(examples[0], (node) => {
   const archivedLinkRegEx = /{page_\d+}/;
   if (
     node.type === 'tag' &&

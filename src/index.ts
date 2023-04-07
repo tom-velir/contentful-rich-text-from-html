@@ -10,13 +10,16 @@ import {
   Mark,
 } from '@contentful/rich-text-types';
 import { parse } from 'html-to-ast';
-import { flatMap } from 'lodash';
+// import { flatMap } from 'lodash';
 import examples from './examples.js';
 
 type HtmlNodes = ReturnType<typeof parse>;
 type HtmlNode = HtmlNodes[0];
 interface HtmlLinkNode extends HtmlNode {
   name: 'a';
+  attrs: {
+    href: string;
+  };
 }
 
 function isLink(node: HtmlNode): node is HtmlLinkNode {
@@ -29,29 +32,46 @@ function richTextFromHtml(
 ): Document {
   const ast = parse(html);
 
-  const modifiedAst = modifyAst(ast, filter);
+  let modifiedAst: HtmlNodes | undefined;
+  if (filter) modifiedAst = modifyAst(ast, filter);
+
   console.log(
-    util.inspect(modifiedAst, { showHidden: false, depth: null, colors: true }),
+    util.inspect(modifiedAst ?? ast, {
+      showHidden: false,
+      depth: null,
+      colors: true,
+    }),
   );
-  // return astToRichTextDocument(ast);
+
+  // return astToRichTextDocument(modifiedAst ?? ast);
 }
 
-function buildHyperlink(node: HtmlLinkNode): Hyperlink | Text {
-  const content = htmlToRichTextNodes(node.children) as Text[]; // TODO: Handle non-text nodes
+function buildHyperlink(node: HtmlLinkNode): Hyperlink {
+  // Transform children to rich text text nodes. Flag non-text nodes
+  const content: Text[] = [];
+  for (const child of node.children || []) {
+    if (child.type !== 'text') {
+      console.warn(
+        `Warning: Found child element "${child.type}" of hyperlink. Contentful only allows text children of hyperlinks. This element will be removed from the output.`,
+      );
+      continue;
+    } else {
+      content.push({
+        nodeType: 'text',
+        value: child.content ?? '',
+        marks: [],
+        data: {},
+      });
+    }
+  }
 
-  // if (typeof node.attrs.href !== 'string') {
-  //   return {
-  //     nodeType: 'text',
-  //     value: content,
-  //     marks: [],
-  //   };
-  // }
+  const hyperlink: Hyperlink = {
+    nodeType: INLINES.HYPERLINK,
+    data: { uri: node.attrs.href },
+    content,
+  };
 
-  // const hyperlink: Hyperlink = {
-  //   nodeType: INLINES.HYPERLINK,
-  //   data: { uri: node.attrs.href },
-  //   content,
-  // };
+  return hyperlink;
 }
 
 function htmlToRichTextNode(node: HtmlNode) {

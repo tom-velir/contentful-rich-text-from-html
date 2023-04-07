@@ -6,7 +6,8 @@
     "sourceMap": true,
     "outDir": "dist",
     "noEmit": false,
-    "noEmitOnError": false
+    "noEmitOnError": false,
+    "strict": true
   },
   "include": ["src/**/*"]
 }
