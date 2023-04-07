@@ -1,0 +1,26 @@
+{
+  "name": "contentful-rich-text-from-html",
+  "version": "0.0.1",
+  "description": "Convert HTML to Contentful Rich Text document format",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc ; node dist/test.js"
+  },
+  "author": "Tom Tillistrand",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^18.15.11",
+    "@typescript-eslint/eslint-plugin": "^5.57.1",
+    "@typescript-eslint/parser": "^5.57.1",
+    "eslint": "^8.37.0",
+    "prettier": "^2.8.7",
+    "typescript": "^5.0.3"
+  },
+  "dependencies": {
+    "@contentful/rich-text-types": "^16.0.3",
+    "html-to-ast": "^0.0.6",
+    "lodash": "^4.17.21",
+    "node-html-parser": "^6.1.5"
+  }
+}
